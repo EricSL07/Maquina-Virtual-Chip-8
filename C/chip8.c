@@ -21,6 +21,7 @@ void VM_CarregarROM(VM *vm,
 
     fclose(rom);
 }
+
 void VM_ExecutarInstrucao(VM *vm)
 {
     uint16_t inst = (vm->RAM[vm->PC] << 8) | vm->RAM[vm->PC + 1];
