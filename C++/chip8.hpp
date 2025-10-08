@@ -11,7 +11,8 @@ private:
     uint8_t SP;
     uint16_t I;
     std::array<uint16_t, 16> stack;
-    std::array<uint8_t, 64 * 32> DISPLAY;
+    std::array<uint8_t, 128 * 64> DISPLAY;
+
 
 public:
     Chip8();
@@ -21,4 +22,5 @@ public:
     bool VM_CarregarROM(std::string arq_rom, uint16_t pc_inicial);
     void VM_ExecutarInstrucao();
     void VM_ImprimirRegistradores();
+    // void VM_ImprimirDisplayConsole();
 };
