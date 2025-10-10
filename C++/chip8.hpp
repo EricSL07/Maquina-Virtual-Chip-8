@@ -1,6 +1,8 @@
 #include <cstdint>
 #include <array>
 #include <string>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_video.h>
 
 class Chip8
 {
