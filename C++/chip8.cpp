@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <cstdlib>
 
-Chip8::Chip8(){}
+Chip8::Chip8() {}
 
 void Chip8::VM_inicializar(uint16_t pc_inicial)
 {
@@ -23,54 +23,8 @@ void Chip8::VM_CarregarROM(char *arq_rom, uint16_t pc_inicial)
     fclose(rom);
 }
 
-int main(int argc, char *argv[])
+void Chip8::runSDL()
 {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    SDL_Surface *surface;
-    SDL_Texture *texture;
-    SDL_Event event;
-
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
-        return 3;
-    }
-
-    if (!SDL_CreateWindowAndRenderer("Hello SDL", 320, 240, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
-        return 3;
-    }
-
-    surface = SDL_LoadBMP("sample.bmp");
-    if (!surface) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create surface from image: %s", SDL_GetError());
-        return 3;
-    }
-    texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (!texture) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create texture from surface: %s", SDL_GetError());
-        return 3;
-    }
-    SDL_DestroySurface(surface);
-
-    while (1) {
-        SDL_PollEvent(&event);
-        if (event.type == SDL_EVENT_QUIT) {
-            break;
-        }
-        SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
-        SDL_RenderClear(renderer);
-        SDL_RenderTexture(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
-    }
-
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-
-    SDL_Quit();
-
-    return 0;
 }
 
 void Chip8::printDisplay()
@@ -122,7 +76,9 @@ void Chip8::VM_ExecutarInstrucao()
                 SP--;
             PC = stack[SP];
             break;
-        } else {
+        }
+        else
+        {
             // Ignora outros 0x0NNN (não implementados)
             std::cout << "Opcode 0x0NNN não suportado: 0x" << std::hex << inst << std::dec << "\n";
         }
@@ -148,7 +104,9 @@ void Chip8::VM_ExecutarInstrucao()
         uint8_t xcoord = V[X] % DISPLAY_WIDTH;
         uint8_t ycoord = V[Y] % DISPLAY_HEIGHT;
 
-        for (uint8_t row = 0; row <= N; row++)
+        V[0xF] = 0;
+
+        for (uint8_t row = 0; row < N; row++)
         {
             uint8_t bits = RAM[I + row];
             uint8_t cy = (ycoord + row) % DISPLAY_HEIGHT;
@@ -156,29 +114,33 @@ void Chip8::VM_ExecutarInstrucao()
             for (uint8_t col = 0; col < 8; col++)
             {
                 uint8_t cx = (xcoord + col) % DISPLAY_WIDTH;
-                uint8_t curr_col = DISPLAY[cx, cy];
-                col = (bits & (0x01 & (7 - col))) ;
-                if (col > 0)
+                uint8_t curr_col = DISPLAY[cy * DISPLAY_WIDTH + cx];
+                uint8_t pixel_sprite = ((bits >> (7 - col)) & 1);
+                if (pixel_sprite > 0)
                 {
-                    if (curr_col > 0){
-                        DISPLAY[cx, cy] = 0;
+                    if (curr_col > 0)
+                    {
+                        DISPLAY[cy * DISPLAY_WIDTH + cx] = 0;
                         V[0xF] = 1;
-                    }else {
-                        DISPLAY[cx, cy] = 1;
                     }
+                    else
+                    {
+                        DISPLAY[cy * DISPLAY_WIDTH + cx] = 1;
+                    }
+                }
                 if (cx == DISPLAY_WIDTH - 1)
                 {
                     break;
                 }
+            }
             if (cy == DISPLAY_HEIGHT - 1)
             {
                 break;
             }
-                }
-            }
         }
+        break;
     }
-    
+
     case 0x7: // adiciona o valor NN ao registrador VX
         V[X] = V[X] + NN;
         break;

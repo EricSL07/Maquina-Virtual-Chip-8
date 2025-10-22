@@ -24,4 +24,5 @@ public:
     void VM_ExecutarInstrucao();
     void VM_ImprimirRegistradores();
     void printDisplay();
+    void runSDL();
 };
