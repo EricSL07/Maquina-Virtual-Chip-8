@@ -4,7 +4,6 @@
 #include <chrono>
 #include "defs.hpp"
 
-
 int main(int argc, char **argv)
 {
     if (argc != 2)
@@ -22,11 +21,13 @@ int main(int argc, char **argv)
 #ifdef DEBUG
     chip8.VM_ImprimirRegistradores();
 #endif
-    // Limpa o terminal (uma vez) e posiciona o cursor no topo
 
 #ifdef DEBUG
-        chip8.VM_ImprimirRegistradores();
+    chip8.VM_ImprimirRegistradores();
 #endif
+    for (int i = 0; i < 1000; ++i)
+        chip8.VM_ExecutarInstrucao();
     chip8.printDisplay();
+    chip8.runSDL();
     return 0;
 }

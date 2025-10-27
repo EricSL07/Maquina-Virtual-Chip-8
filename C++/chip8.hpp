@@ -1,8 +1,7 @@
 #include <cstdint>
 #include <array>
 #include <string>
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_video.h>
+#include <SDL2/SDL.h>
 
 class Chip8
 {
@@ -14,6 +13,11 @@ private:
     uint16_t I;
     uint16_t stack[16];
     uint8_t DISPLAY[64 * 32];
+    uint8_t delay_timer;
+    uint8_t sound_timer;
+    bool FlagDesenhar;
+    uint8_t key[16];
+
 
 public:
     Chip8();
@@ -25,4 +29,5 @@ public:
     void VM_ImprimirRegistradores();
     void printDisplay();
     void runSDL();
+    void tickTimers();
 };

@@ -3,8 +3,25 @@
 #include <fstream>
 #include <iomanip>
 #include <cstdlib>
+#include <cstring>
+#include <SDL2/SDL.h>
+#include <chrono>
+#include <thread>
 
-Chip8::Chip8() {}
+Chip8::Chip8()
+{
+    PC = 0x200; // endereço inicial típico do CHIP-8
+    I = 0;
+    SP = 0;
+    delay_timer = 0;
+    sound_timer = 0;
+    FlagDesenhar = false;
+    std::memset(key, 0, sizeof(key));
+    std::memset(V, 0, sizeof(V));
+    std::memset(RAM, 0, sizeof(RAM));
+    std::memset(DISPLAY, 0, sizeof(DISPLAY));
+    std::memset(stack, 0, sizeof(stack));
+}
 
 void Chip8::VM_inicializar(uint16_t pc_inicial)
 {
@@ -23,8 +40,170 @@ void Chip8::VM_CarregarROM(char *arq_rom, uint16_t pc_inicial)
     fclose(rom);
 }
 
+static int map_sdl_scancode_to_chip8(SDL_Scancode sc)
+{
+    switch (sc)
+    {
+    case SDL_SCANCODE_X:
+        return 0x0;
+    case SDL_SCANCODE_1:
+        return 0x1;
+    case SDL_SCANCODE_2:
+        return 0x2;
+    case SDL_SCANCODE_3:
+        return 0x3;
+    case SDL_SCANCODE_Q:
+        return 0x4;
+    case SDL_SCANCODE_W:
+        return 0x5;
+    case SDL_SCANCODE_E:
+        return 0x6;
+    case SDL_SCANCODE_A:
+        return 0x7;
+    case SDL_SCANCODE_S:
+        return 0x8;
+    case SDL_SCANCODE_D:
+        return 0x9;
+    case SDL_SCANCODE_Z:
+        return 0xA;
+    case SDL_SCANCODE_C:
+        return 0xB;
+    case SDL_SCANCODE_4:
+        return 0xC;
+    case SDL_SCANCODE_R:
+        return 0xD;
+    case SDL_SCANCODE_F:
+        return 0xE;
+    case SDL_SCANCODE_V:
+        return 0xF;
+    default:
+        return -1;
+    }
+}
+
+static void update_texture_from_display(SDL_Texture *tex, const uint8_t display[])
+{
+    const int width = 64, height = 32;
+    uint32_t pixels[width * height];
+    // branco e preto (format RGBA8888)
+    const uint32_t on = 0xFFFFFFFF;  // white
+    const uint32_t off = 0x000000FF; // black
+
+    for (int y = 0; y < height; ++y)
+    {
+        for (int x = 0; x < width; ++x)
+        {
+            pixels[y * width + x] = display[y * width + x] ? on : off;
+        }
+    }
+    // pitch = width * 4 bytes
+    SDL_UpdateTexture(tex, NULL, pixels, width * sizeof(uint32_t));
+}
+
 void Chip8::runSDL()
 {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0)
+    {
+        fprintf(stderr, "SDL_Init erro: %s\n", SDL_GetError());
+        return;
+    }
+
+    const int scale = 10; // ajuste (10 -> janela 640x320)
+    const int win_w = 64 * scale;
+    const int win_h = 32 * scale;
+
+    SDL_Window *window = SDL_CreateWindow("CHIP-8",
+                                          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                          win_w, win_h, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI);
+
+    if (!window)
+    {
+        fprintf(stderr, "SDL_CreateWindow erro: %s\n", SDL_GetError());
+        SDL_Quit();
+        return;
+    }
+
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer)
+    {
+        fprintf(stderr, "SDL_CreateRenderer erro: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return;
+    }
+
+    // textura 64x32 (uma célula por texel)
+    SDL_Texture *tex = SDL_CreateTexture(renderer,
+                                         SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+                                         64, 32);
+
+    bool running = true;
+    SDL_Event event;
+
+    const int cycles_per_frame = 10;     // ajuste conforme necessário
+    const uint32_t frame_ms = 1000 / 60; // 60Hz
+    uint32_t last_tick = SDL_GetTicks();
+
+    while (running)
+    {
+        // processa eventos e teclado
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_QUIT)
+            {
+                running = false;
+                break;
+            }
+            if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
+            {
+                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
+                {
+                    running = false;
+                    break;
+                }
+                int mapped = map_sdl_scancode_to_chip8(event.key.keysym.scancode);
+                if (mapped >= 0)
+                {
+                    key[mapped] = (event.type == SDL_KEYDOWN) ? 1 : 0;
+                }
+            }
+        }
+        if (!running)
+            break;
+
+        // executa N instruções por frame (CPU speed)
+        for (int i = 0; i < cycles_per_frame; ++i)
+        {
+            VM_ExecutarInstrucao();
+        }
+
+        // temporização: atualiza timers a 60Hz
+        uint32_t now = SDL_GetTicks();
+        if (now - last_tick >= frame_ms)
+        {
+            tickTimers();
+            // redesenha apenas se algo mudou
+            if (FlagDesenhar)
+            {
+                update_texture_from_display(tex, DISPLAY);
+                SDL_RenderClear(renderer);
+                // desenha e escala automaticamente (dest rect maior)
+                SDL_Rect dst = {0, 0, win_w, win_h};
+                SDL_RenderCopy(renderer, tex, NULL, &dst);
+                SDL_RenderPresent(renderer);
+                FlagDesenhar = false;
+            }
+            last_tick = now;
+        }
+
+        // pequena pausa para não consumir 100% CPU
+        SDL_Delay(1);
+    }
+
+    SDL_DestroyTexture(tex);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 }
 
 void Chip8::printDisplay()
@@ -33,15 +212,9 @@ void Chip8::printDisplay()
     {
         for (int x = 0; x < 64; x++)
         {
-            if (DISPLAY[y * 64 + x] == 1)
-            {
-                std::cout << "█";
-            }
-            else
-            {
-                std::cout << " ";
-            }
+            std::cout << (DISPLAY[y * 64 + x] ? "█" : " ");
         }
+        std::cout << '\n';
     }
 }
 
@@ -67,6 +240,7 @@ void Chip8::VM_ExecutarInstrucao()
             for (int i = 0; i < 64 * 32; i++)
             {
                 DISPLAY[i] = 0;
+                FlagDesenhar = true;
             }
             break;
         }
@@ -116,9 +290,9 @@ void Chip8::VM_ExecutarInstrucao()
                 uint8_t cx = (xcoord + col) % DISPLAY_WIDTH;
                 uint8_t curr_col = DISPLAY[cy * DISPLAY_WIDTH + cx];
                 uint8_t pixel_sprite = ((bits >> (7 - col)) & 1);
-                if (pixel_sprite > 0)
+                if (pixel_sprite)
                 {
-                    if (curr_col > 0)
+                    if (curr_col)
                     {
                         DISPLAY[cy * DISPLAY_WIDTH + cx] = 0;
                         V[0xF] = 1;
@@ -128,16 +302,9 @@ void Chip8::VM_ExecutarInstrucao()
                         DISPLAY[cy * DISPLAY_WIDTH + cx] = 1;
                     }
                 }
-                if (cx == DISPLAY_WIDTH - 1)
-                {
-                    break;
-                }
-            }
-            if (cy == DISPLAY_HEIGHT - 1)
-            {
-                break;
             }
         }
+        FlagDesenhar = true;
         break;
     }
 
@@ -160,4 +327,16 @@ void Chip8::VM_ImprimirRegistradores()
         printf("V[%X]: 0x%02X ", i, V[i]);
     }
     printf("\n");
+}
+
+void Chip8::tickTimers()
+{
+    if (delay_timer > 0)
+        --delay_timer;
+    if (sound_timer > 0)
+    {
+        --sound_timer;
+        if (sound_timer == 1)
+            std::cout << '\a'; // beep ASCII
+    }
 }
