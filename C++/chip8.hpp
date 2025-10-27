@@ -17,7 +17,8 @@ private:
     uint8_t sound_timer;
     bool FlagDesenhar;
     uint8_t key[16];
-
+    bool waitingForKey = false;  // espera por tecla (FX0A)
+    uint8_t waitingRegister = 0; // registrador a preencher quando a tecla for pressionada
 
 public:
     Chip8();
