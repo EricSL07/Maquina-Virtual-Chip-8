@@ -1,7 +1,4 @@
 #include "chip8.hpp"
-#include <iostream>
-#include <thread>
-#include <chrono>
 #include "defs.hpp"
 
 int main(int argc, char **argv)
@@ -25,9 +22,6 @@ int main(int argc, char **argv)
 #ifdef DEBUG
     chip8.VM_ImprimirRegistradores();
 #endif
-    for (int i = 0; i < 1000; ++i)
-        chip8.VM_ExecutarInstrucao();
-    chip8.printDisplay();
-    chip8.runSDL();
+    chip8.rodarSDL();
     return 0;
 }
