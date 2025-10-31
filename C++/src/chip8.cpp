@@ -1,4 +1,4 @@
-#include "chip8.hpp"
+#include "./lib/chip8.hpp"
 
 static const uint8_t chip8_fontset[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -73,7 +73,6 @@ void Chip8::VM_ExecutarInstrucao()
     }
 
     uint16_t inst = (memoria[pc] << 8) | memoria[pc + 1];
-    // Não incrementamos PC aqui; cada case faz a atualização correta.
     uint8_t X = (inst & 0x0F00) >> 8;
     uint8_t Y = (inst & 0x00F0) >> 4;
     uint8_t N = inst & 0x000F;

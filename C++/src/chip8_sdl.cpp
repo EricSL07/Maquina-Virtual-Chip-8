@@ -1,4 +1,4 @@
-#include "chip8.hpp"
+#include "./lib/chip8.hpp"
 // Mapeia SDL_Keycode para tecla CHIP-8 (0x0 a 0xF)
 static int mapear_tecla_sdl_para_chip8(SDL_Keycode k)
 {
