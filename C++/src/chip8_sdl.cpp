@@ -1,4 +1,4 @@
-#include "./lib/chip8.hpp"
+#include "../lib/chip8.hpp"
 // Mapeia SDL_Keycode para tecla CHIP-8 (0x0 a 0xF)
 static int mapear_tecla_sdl_para_chip8(SDL_Keycode k)
 {
@@ -67,7 +67,7 @@ void rodar_loop_sdl(Chip8 &vm)
         return;
     }
 
-    const int escala = 10; // ajuste (10 -> janela 640x320)
+    const int escala = 20; // ajuste (10 -> janela 640x320)
     const int largura_janela = 64 * escala;
     const int altura_janela = 32 * escala;
 
@@ -95,7 +95,7 @@ void rodar_loop_sdl(Chip8 &vm)
                                          SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                          64, 32);
 
-    bool running = true;
+    bool executando = true;
     SDL_Event event;
 
     const int hz_cpu = 500;                                  // objetivo de instruções por segundo (ajuste 400..800)
@@ -103,7 +103,7 @@ void rodar_loop_sdl(Chip8 &vm)
     double acumulador_ciclos = 0.0;
     const uint32_t ms_por_frame = 1000 / 60; // 60Hz
 
-    while (running)
+    while (executando)
     {
         Uint32 t_inicio = SDL_GetTicks();
 
@@ -112,14 +112,14 @@ void rodar_loop_sdl(Chip8 &vm)
         {
             if (event.type == SDL_QUIT)
             {
-                running = false;
+                executando = false;
                 break;
             }
             if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
             {
                 if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)
                 {
-                    running = false;
+                    executando = false;
                     break;
                 }
 

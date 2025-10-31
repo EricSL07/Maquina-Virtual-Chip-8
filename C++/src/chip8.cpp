@@ -1,4 +1,4 @@
-#include "./lib/chip8.hpp"
+#include "../lib/chip8.hpp"
 
 static const uint8_t chip8_fontset[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0

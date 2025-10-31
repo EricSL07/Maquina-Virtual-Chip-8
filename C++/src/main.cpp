@@ -1,5 +1,5 @@
-#include "./lib/chip8.hpp"
-#include "./lib/defs.hpp"
+#include "../lib/chip8.hpp"
+#include "../lib/defs.hpp"
 
 int main(int argc, char **argv)
 {
