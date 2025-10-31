@@ -377,7 +377,7 @@ void Chip8::tickTimers()
     }
 }
 
-void Chip8::rodarSDL()
+void Chip8::rodarSDL(int fps, int scale)
 {
-    rodar_loop_sdl(*this);
+    rodar_loop_sdl(*this, fps, scale);
 }

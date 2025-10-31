@@ -59,7 +59,7 @@ static void atualizar_textura_de_tela(SDL_Texture *tex, const uint8_t display[])
     SDL_UpdateTexture(tex, NULL, pixels, width * sizeof(uint32_t));
 }
 
-void rodar_loop_sdl(Chip8 &vm)
+void rodar_loop_sdl(Chip8 &vm, int fps, int scale)
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0)
     {
@@ -67,7 +67,7 @@ void rodar_loop_sdl(Chip8 &vm)
         return;
     }
 
-    const int escala = 20; // ajuste (10 -> janela 640x320)
+    const int escala = scale; // ajuste (10 -> janela 640x320)
     const int largura_janela = 64 * escala;
     const int altura_janela = 32 * escala;
 
@@ -98,7 +98,7 @@ void rodar_loop_sdl(Chip8 &vm)
     bool executando = true;
     SDL_Event event;
 
-    const int hz_cpu = 500;                                  // objetivo de instruções por segundo (ajuste 400..800)
+    const int hz_cpu = fps;                                  // objetivo de instruções por segundo (ajuste 400..800)
     const double ciclos_por_frame_d = double(hz_cpu) / 60.0; // média de instruções por frame
     double acumulador_ciclos = 0.0;
     const uint32_t ms_por_frame = 1000 / 60; // 60Hz

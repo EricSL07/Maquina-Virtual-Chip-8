@@ -34,8 +34,8 @@ public:
     void VM_CarregarROM(char *arq_rom, uint16_t pc_inicial);
     void VM_ExecutarInstrucao();
     void VM_ImprimirRegistradores();
-    void rodarSDL();
+    void rodarSDL(int fps, int scale);
     void tickTimers();
     // friend para permitir que a camada SDL acesse os internos para renderização/entrada
-    friend void rodar_loop_sdl(Chip8 &vm);
+    friend void rodar_loop_sdl(Chip8 &vm, int fps, int scale);
 };
